@@ -4,6 +4,6 @@
 
 - 第一至第九世代官方正版 + 热门改版
 - 支持 GBC / GBA / NDS / 3DS / NS 平台
-- 在线地址：https://doomsday616.github.io/Pokemon-Roms/
+- 在线地址：https://pokemon-roms.top/
 
 > 本站为静态站点，游戏文件托管在外部（GitHub / 网盘），点击下载按钮即可直接获取，不再有任何付费环节。

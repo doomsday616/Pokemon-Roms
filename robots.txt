@@ -1,5 +1,5 @@
 # robots.txt for Pokemon-Roms
-# https://doomsday616.github.io/Pokemon-Roms/
+# https://pokemon-roms.top/
 
 # 允许所有搜索引擎爬虫访问
 User-agent: *
@@ -53,4 +53,4 @@ Allow: /
 Crawl-delay: 2
 
 # Sitemap 位置
-Sitemap: https://doomsday616.github.io/Pokemon-Roms/sitemap.xml
+Sitemap: https://pokemon-roms.top/sitemap.xml
