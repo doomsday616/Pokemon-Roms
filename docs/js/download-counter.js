@@ -7,7 +7,10 @@
     'use strict';
 
     const DOWNLOAD_SELECTOR = '.list-group-item-danger .button-link[onclick*="window.open"]';
-    const API_BASE = (window.DOWNLOAD_COUNTER_API || '/api/download-counter').replace(/\/$/, '');
+    const DEFAULT_API_BASE = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
+        ? 'https://pokemon-roms.top/api/download-counter'
+        : '/api/download-counter';
+    const API_BASE = (window.DOWNLOAD_COUNTER_API || DEFAULT_API_BASE).replace(/\/$/, '');
 
     const counts = {};
     const keys = new Set();

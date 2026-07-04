@@ -33,8 +33,8 @@ body {
 }
 
 .sticky-top {
-    position: sticky;
-    top: 0;
+    position: relative;
+    top: auto;
     z-index: 1000;  /* 确保它在页面的最顶层 */
     width: 100%; /* 确保它宽度与容器一致 */
 }
@@ -74,20 +74,31 @@ body {
     overflow: hidden; /* 防止内容溢出 */
 }
 
+.list-group-item-danger {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+}
+
 .button-link {
     background: none;            /* 无背景 */
     color: blue;                 /* 链接蓝色 */
     border: none;                /* 无边框 */
-    padding: 0;                  /* 无内边距 */
+    padding: 2px 4px;            /* 保持链接感，同时给长标签一点呼吸空间 */
     margin: 0;                   /* 根据需要调整外边距 */
     font: inherit;               /* 继承字体样式 */
     cursor: pointer;             /* 手型光标 */
     text-decoration: underline;  /* 下划线，模仿链接 */
     min-height: 44px;            /* 移动端最小触摸区域 */
-    min-width: 44px;             /* 移动端最小触摸区域 */
+    min-width: auto;
+    max-width: 100%;
     display: inline-flex;        /* Flexbox 布局 */
     align-items: center;         /* 垂直居中 */
     justify-content: center;     /* 水平居中 */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
 }
 
 .button-link:hover,
@@ -99,8 +110,8 @@ body {
 .download-count {
     display: inline-flex;
     align-items: center;
+    flex: 0 0 auto;
     min-height: 24px;
-    margin-left: 6px;
     padding: 1px 7px;
     border-radius: 999px;
     background-color: rgba(40, 167, 69, 0.14);
@@ -181,28 +192,50 @@ body {
 .header-container {
     display: flex;
     align-items: center;
-    flex-wrap: wrap; /* 允许换行 */
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 14px;
 }
-.header-title {
-    margin-bottom: 0;
-    flex-grow: 1;
+
+.header-brand {
     display: flex;
     align-items: center;
     gap: 5px;
+    flex: 0 0 auto;
 }
-.header-title img {
+
+.header-brand img {
     height: 60px;
     width: auto;
     max-width: 100%;
 }
+
+.header-copy {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    flex: 1 1 520px;
+    min-width: 0;
+}
+
+.site-title {
+    flex: 1 1 320px;
+    min-width: 260px;
+    margin: 0;
+    color: #111;
+    font-size: clamp(24px, 3.4vw, 42px);
+    font-weight: 900;
+    line-height: 1.15;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+}
+
 .header-free {
     display: inline-block;
-    font-size: clamp(38px, 8vw, 72px);
+    font-size: clamp(30px, 5vw, 56px);
     font-weight: 900;
     color: #fff;
     background: linear-gradient(135deg, #2ecc40, #0b8a2e);
-    padding: 6px 26px;
+    padding: 5px 22px;
     border-radius: 16px;
     border: 4px solid #fff;
     box-shadow: 0 4px 12px rgba(0,0,0,0.35);
@@ -210,11 +243,10 @@ body {
     line-height: 1.15;
     text-shadow: 2px 2px 3px rgba(0,0,0,0.35);
     white-space: nowrap;
-    margin-left: 10px;
 }
+
 .header-explanation {
     padding: 10px;
-    margin-left: 20px;
     background-image: linear-gradient(to right, #ffd700, #b8860b);
     border: 3px solid hsl(210.8, 73.86%, 30%);
     border-radius: 5px;
@@ -265,14 +297,16 @@ body {
 /* 快速导航 */
 .quick-nav {
     position: fixed;
-    top: 50%;
-    right: 30px;
-    transform: translateY(-50%);
+    top: 24px;
+    right: 18px;
     background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 10px;
-    padding: 15px;
+    border-radius: 8px;
+    padding: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    min-width: 150px;
+    display: none;
+    width: 142px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
     z-index: 998;
 }
 
@@ -351,6 +385,10 @@ body {
     animation: slideDown 0.3s ease-out;
 }
 
+.section-navigation-bar > div {
+    background: rgba(22, 22, 22, 0.94) !important;
+}
+
 @keyframes slideDown {
     from {
         opacity: 0;
@@ -401,6 +439,16 @@ body {
     }
 }
 
+@media (min-width: 1200px) {
+    body {
+        padding-right: 170px;
+    }
+
+    .quick-nav {
+        display: block;
+    }
+}
+
 /* 响应式设计 - 移动端优化 */
 @media (max-width: 768px) {
     /* 隐藏快速导航 */
@@ -421,6 +469,7 @@ body {
     .section-navigation-bar {
         font-size: 12px;
         padding: 8px 5px !important;
+        top: 0;
     }
     
     .section-navigation-bar button {
@@ -437,12 +486,35 @@ body {
     /* 优化头部 */
     .header-container {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 10px;
     }
     
-    .header-title img {
+    .header-brand {
+        justify-content: center;
+        flex: 0 1 auto;
+    }
+
+    .header-brand img {
         height: 40px !important;
+    }
+
+    .header-copy {
+        flex: 0 1 auto;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .site-title {
+        flex-basis: 100%;
+        min-width: 0;
+        font-size: 24px;
+    }
+
+    .header-free {
+        transform: none;
+        font-size: 28px;
+        padding: 4px 18px;
     }
     
     .header-explanation {
@@ -507,10 +579,10 @@ body {
     /* 优化按钮 */
     .button-link {
         font-size: 12px;
+        min-height: 36px;
     }
 
     .download-count {
-        margin-left: 4px;
         padding: 1px 5px;
         font-size: 10px;
     }
@@ -567,7 +639,7 @@ body {
         padding: 6px 10px;
     }
     
-    .header-title img {
+    .header-brand img {
         height: 50px !important;
     }
     
@@ -587,7 +659,7 @@ body {
 
 /* 小屏手机优化 (最大 576px) */
 @media (max-width: 576px) {
-    .header-title img {
+    .header-brand img {
         height: 35px !important;
     }
     
