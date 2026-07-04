@@ -8,6 +8,7 @@
 
     const DOWNLOAD_SELECTOR = '.list-group-item-danger .button-link[onclick*="window.open"]';
     const OPTION_CLASS = 'download-option';
+    const LABEL_CLASS = 'download-label';
     const CHECK_CLASS = 'download-check';
     const LINK_CHECK_CONCURRENCY = 6;
     const DEFAULT_API_BASE = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
@@ -49,26 +50,38 @@
         });
     }
 
-    function cleanDownloadLabel(button) {
-        if (button.dataset.labelCleaned === 'true') return;
-
-        const label = button.textContent.trim().replace(/^\[(.+)\]$/, '$1');
-        if (label) {
-            button.textContent = label;
-        }
-        button.dataset.labelCleaned = 'true';
+    function directChildByClass(parent, className) {
+        return Array.from(parent.children).find(child => child.classList.contains(className));
     }
 
-    function wrapDownloadButton(button) {
-        if (button.parentElement && button.parentElement.classList.contains(OPTION_CLASS)) {
-            return button.parentElement;
-        }
+    function getDownloadLabel(button) {
+        if (button.dataset.downloadLabel) return button.dataset.downloadLabel;
 
-        const option = document.createElement('span');
-        option.className = OPTION_CLASS;
-        button.insertAdjacentElement('beforebegin', option);
-        option.appendChild(button);
-        return option;
+        const textNodes = Array.from(button.childNodes)
+            .filter(node => node.nodeType === Node.TEXT_NODE)
+            .map(node => node.textContent)
+            .join('')
+            .trim();
+        const rawLabel = textNodes || button.textContent.trim();
+        const label = rawLabel.replace(/^\[(.+)\]$/, '$1') || '下载';
+        button.dataset.downloadLabel = label;
+        return label;
+    }
+
+    function enhanceDownloadButton(button) {
+        if (button.dataset.optionEnhanced === 'true') return button;
+
+        const label = getDownloadLabel(button);
+        button.classList.add(OPTION_CLASS);
+        button.textContent = '';
+
+        const labelElement = document.createElement('span');
+        labelElement.className = LABEL_CLASS;
+        labelElement.textContent = label;
+        button.appendChild(labelElement);
+
+        button.dataset.optionEnhanced = 'true';
+        return button;
     }
 
     function setCheckState(checkElement, state, status) {
@@ -104,7 +117,7 @@
     }
 
     function addLinkChecker(option, downloadKey) {
-        let checkElement = option.querySelector(`.${CHECK_CLASS}`);
+        let checkElement = directChildByClass(option, CHECK_CLASS);
         if (!checkElement) {
             checkElement = document.createElement('span');
             checkElement.className = CHECK_CLASS;
@@ -122,14 +135,16 @@
         const downloadKey = keyForUrl(url);
         button.dataset.downloadKey = downloadKey;
         keys.add(downloadKey);
-        cleanDownloadLabel(button);
-        const option = wrapDownloadButton(button);
+        const option = enhanceDownloadButton(button);
+        option.dataset.downloadKey = downloadKey;
+        option.dataset.downloadUrl = downloadKey;
 
-        if (button.nextElementSibling && button.nextElementSibling.classList.contains('download-count')) {
-            button.nextElementSibling.dataset.downloadKey = downloadKey;
+        let counter = directChildByClass(option, 'download-count');
+        if (counter) {
+            counter.dataset.downloadKey = downloadKey;
             updateCounters(downloadKey);
         } else {
-            const counter = document.createElement('span');
+            counter = document.createElement('span');
             counter.className = 'download-count is-loading';
             counter.dataset.downloadKey = downloadKey;
             counter.textContent = formatCount();
