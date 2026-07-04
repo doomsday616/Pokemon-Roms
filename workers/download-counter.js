@@ -10,6 +10,8 @@ const ALLOWED_KEY_PREFIXES = [
     'https://pan.baidu.com/'
 ];
 
+const LINK_CHECK_TIMEOUT_MS = 7000;
+
 function corsHeaders(request) {
     const origin = request.headers.get('Origin');
     const allowOrigin = ALLOWED_ORIGINS.has(origin) ? origin : 'https://pokemon-roms.top';
@@ -48,6 +50,50 @@ function cleanKey(value) {
     if (!key || key.length > 2048) return '';
     if (!ALLOWED_KEY_PREFIXES.some(prefix => key.startsWith(prefix))) return '';
     return key;
+}
+
+async function fetchWithTimeout(url, init) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LINK_CHECK_TIMEOUT_MS);
+
+    try {
+        return await fetch(url, {
+            redirect: 'follow',
+            ...init,
+            signal: controller.signal
+        });
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function probeDownloadUrl(downloadUrl) {
+    let response;
+
+    try {
+        response = await fetchWithTimeout(downloadUrl, { method: 'HEAD' });
+        if ([403, 405, 501].includes(response.status)) {
+            response = await fetchWithTimeout(downloadUrl, {
+                method: 'GET',
+                headers: { Range: 'bytes=0-0' }
+            });
+        }
+    } catch (error) {
+        response = await fetchWithTimeout(downloadUrl, {
+            method: 'GET',
+            headers: { Range: 'bytes=0-0' }
+        });
+    }
+
+    if (response.body) {
+        await response.body.cancel();
+    }
+
+    return {
+        ok: response.status >= 200 && response.status < 400,
+        status: response.status,
+        finalUrl: response.url
+    };
 }
 
 async function ensureSchema(env) {
@@ -118,17 +164,49 @@ async function handleIncrement(request, env) {
     return jsonResponse(request, { key, count: Number(row?.count) || 1 });
 }
 
+async function handleCheck(request) {
+    const body = await readJSON(request);
+    const downloadUrl = cleanKey(body?.url);
+
+    if (!downloadUrl) {
+        return jsonResponse(request, { error: 'Expected an allowed download URL.' }, 400);
+    }
+
+    try {
+        const result = await probeDownloadUrl(downloadUrl);
+        return jsonResponse(request, {
+            url: downloadUrl,
+            ok: result.ok,
+            status: result.status,
+            finalUrl: result.finalUrl,
+            checkedAt: new Date().toISOString()
+        });
+    } catch (error) {
+        return jsonResponse(request, {
+            url: downloadUrl,
+            ok: false,
+            status: 0,
+            error: error?.name === 'AbortError' ? 'Request timed out.' : 'Link check failed.',
+            checkedAt: new Date().toISOString()
+        });
+    }
+}
+
 export default {
     async fetch(request, env) {
         if (request.method === 'OPTIONS') {
             return new Response(null, { status: 204, headers: corsHeaders(request) });
         }
 
+        const url = new URL(request.url);
+        if (request.method === 'POST' && url.pathname === '/api/download-counter/check') {
+            return handleCheck(request);
+        }
+
         if (!env.DB) {
             return jsonResponse(request, { error: 'Counter database is not configured.' }, 500);
         }
 
-        const url = new URL(request.url);
         if (request.method === 'POST' && url.pathname === '/api/download-counter/counts') {
             return handleCounts(request, env);
         }

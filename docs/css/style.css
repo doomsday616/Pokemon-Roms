@@ -84,48 +84,65 @@ body {
 .download-option {
     display: inline-flex;
     align-items: center;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: 100%;
-    gap: 4px;
+    gap: 0;
+    border: 1px solid rgba(31, 87, 135, 0.16);
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.76);
+    box-shadow: 0 1px 2px rgba(17, 56, 86, 0.08);
+    overflow: hidden;
     white-space: nowrap;
     vertical-align: middle;
 }
 
 .button-link {
-    background: none;            /* 无背景 */
-    color: blue;                 /* 链接蓝色 */
+    background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+    color: #164f82;
     border: none;                /* 无边框 */
-    padding: 2px 4px;            /* 保持链接感，同时给长标签一点呼吸空间 */
+    border-radius: 0;
+    padding: 5px 10px;
     margin: 0;                   /* 根据需要调整外边距 */
     font: inherit;               /* 继承字体样式 */
+    font-weight: 700;
     cursor: pointer;             /* 手型光标 */
-    text-decoration: underline;  /* 下划线，模仿链接 */
-    min-height: 44px;            /* 移动端最小触摸区域 */
-    min-width: auto;
+    text-decoration: none;
+    min-height: 30px;
+    min-width: 0;
     max-width: 100%;
     display: inline-flex;        /* Flexbox 布局 */
     align-items: center;         /* 垂直居中 */
     justify-content: center;     /* 水平居中 */
     white-space: nowrap;
+    overflow: hidden;
     overflow-wrap: anywhere;
+    text-overflow: ellipsis;
     line-height: 1.35;
 }
 
 .button-link:hover,
 .button-link:focus {
     text-decoration: none;       /* 鼠标悬停和聚焦时无下划线 */
-    color: darkblue;             /* 悬停时颜色加深 */
+    color: #0b3c68;
+    background: linear-gradient(180deg, #eaf5ff 0%, #d9ecff 100%);
+}
+
+.button-link:focus-visible {
+    outline: 2px solid rgba(0, 123, 255, 0.42);
+    outline-offset: -2px;
 }
 
 .download-count {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    min-height: 24px;
-    padding: 1px 7px;
-    border-radius: 999px;
-    background-color: rgba(40, 167, 69, 0.14);
-    color: #155724;
+    min-height: 30px;
+    padding: 4px 9px;
+    border-left: 1px solid rgba(32, 125, 63, 0.14);
+    border-radius: 0;
+    background: linear-gradient(180deg, #edf9ee 0%, #dff1e1 100%);
+    color: #17612e;
     font-size: 11px;
     font-weight: 700;
     line-height: 1.4;
@@ -133,14 +150,48 @@ body {
     vertical-align: middle;
 }
 
+.download-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 4px 8px;
+    border: 0;
+    border-left: 1px solid rgba(31, 87, 135, 0.12);
+    background: linear-gradient(180deg, #f8fbff 0%, #edf3f8 100%);
+    color: #39556f;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.download-check.is-checking {
+    color: #59636c;
+    background: linear-gradient(180deg, #f4f5f6 0%, #e8ebee 100%);
+}
+
+.download-check.is-valid {
+    color: #0f652d;
+    background: linear-gradient(180deg, #e9f8ec 0%, #d6efdc 100%);
+}
+
+.download-check.is-invalid {
+    color: #8a1f2d;
+    background: linear-gradient(180deg, #fff0f1 0%, #f8d5da 100%);
+}
+
 .download-count.is-loading {
     color: #555;
-    background-color: rgba(108, 117, 125, 0.14);
+    background: linear-gradient(180deg, #f5f6f7 0%, #e9ecef 100%);
 }
 
 .download-count.is-error {
     color: #721c24;
-    background-color: rgba(220, 53, 69, 0.12);
+    background: linear-gradient(180deg, #fff1f2 0%, #f8d7da 100%);
 }
 
 /* Badge 徽章样式优化 */
@@ -685,6 +736,11 @@ body {
 
     .download-count {
         padding: 1px 5px;
+        font-size: 10px;
+    }
+
+    .download-check {
+        padding: 3px 6px;
         font-size: 10px;
     }
     .container {

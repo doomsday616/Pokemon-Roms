@@ -84,18 +84,10 @@
   
   <!-- 非官方改版 -->
   <url>
-    <loc>https://pokemon-roms.top/#section-mod</loc>
+    <loc>https://pokemon-roms.top/#section-10</loc>
     <lastmod>2025-11-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-  </url>
-  
-  <!-- 模拟器下载 -->
-  <url>
-    <loc>https://pokemon-roms.top/#section-simulator</loc>
-    <lastmod>2025-11-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
   </url>
 
 </urlset>

@@ -8,6 +8,8 @@
 
     const DOWNLOAD_SELECTOR = '.list-group-item-danger .button-link[onclick*="window.open"]';
     const OPTION_CLASS = 'download-option';
+    const CHECK_CLASS = 'download-check';
+    const LINK_CHECK_CONCURRENCY = 6;
     const DEFAULT_API_BASE = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
         ? 'https://pokemon-roms.top/api/download-counter'
         : '/api/download-counter';
@@ -15,6 +17,7 @@
 
     const counts = {};
     const keys = new Set();
+    let linkChecksStarted = false;
 
     function extractDownloadUrl(button) {
         const inlineHandler = button.getAttribute('onclick') || '';
@@ -46,6 +49,16 @@
         });
     }
 
+    function cleanDownloadLabel(button) {
+        if (button.dataset.labelCleaned === 'true') return;
+
+        const label = button.textContent.trim().replace(/^\[(.+)\]$/, '$1');
+        if (label) {
+            button.textContent = label;
+        }
+        button.dataset.labelCleaned = 'true';
+    }
+
     function wrapDownloadButton(button) {
         if (button.parentElement && button.parentElement.classList.contains(OPTION_CLASS)) {
             return button.parentElement;
@@ -58,6 +71,50 @@
         return option;
     }
 
+    function setCheckState(checkElement, state, status) {
+        checkElement.classList.remove('is-checking', 'is-valid', 'is-invalid');
+
+        if (state === 'checking') {
+            checkElement.classList.add('is-checking');
+            checkElement.textContent = '检测中';
+            checkElement.title = '正在自动检测下载链接';
+            checkElement.setAttribute('aria-label', '正在自动检测下载链接');
+            return;
+        }
+
+        if (state === 'valid') {
+            checkElement.classList.add('is-valid');
+            checkElement.textContent = '有效';
+            checkElement.title = status ? `链接有效，HTTP ${status}` : '链接有效';
+            checkElement.setAttribute('aria-label', checkElement.title);
+            return;
+        }
+
+        if (state === 'invalid') {
+            checkElement.classList.add('is-invalid');
+            checkElement.textContent = '无效';
+            checkElement.title = status ? `链接无效，HTTP ${status}` : '链接无效或检测失败';
+            checkElement.setAttribute('aria-label', checkElement.title);
+            return;
+        }
+
+        checkElement.textContent = '待检测';
+        checkElement.title = '等待自动检测下载链接';
+        checkElement.setAttribute('aria-label', '等待自动检测下载链接');
+    }
+
+    function addLinkChecker(option, downloadKey) {
+        let checkElement = option.querySelector(`.${CHECK_CLASS}`);
+        if (!checkElement) {
+            checkElement = document.createElement('span');
+            checkElement.className = CHECK_CLASS;
+            option.appendChild(checkElement);
+        }
+
+        checkElement.dataset.downloadUrl = downloadKey;
+        setCheckState(checkElement, 'checking');
+    }
+
     function addCounter(button) {
         const url = extractDownloadUrl(button);
         if (!url) return;
@@ -65,20 +122,22 @@
         const downloadKey = keyForUrl(url);
         button.dataset.downloadKey = downloadKey;
         keys.add(downloadKey);
+        cleanDownloadLabel(button);
         const option = wrapDownloadButton(button);
 
         if (button.nextElementSibling && button.nextElementSibling.classList.contains('download-count')) {
             button.nextElementSibling.dataset.downloadKey = downloadKey;
             updateCounters(downloadKey);
-            return;
+        } else {
+            const counter = document.createElement('span');
+            counter.className = 'download-count is-loading';
+            counter.dataset.downloadKey = downloadKey;
+            counter.textContent = formatCount();
+            counter.setAttribute('aria-label', counter.textContent);
+            option.appendChild(counter);
         }
 
-        const counter = document.createElement('span');
-        counter.className = 'download-count is-loading';
-        counter.dataset.downloadKey = downloadKey;
-        counter.textContent = formatCount();
-        counter.setAttribute('aria-label', counter.textContent);
-        option.appendChild(counter);
+        addLinkChecker(option, downloadKey);
     }
 
     function bindCounters() {
@@ -168,9 +227,47 @@
         incrementCount(downloadKey);
     }
 
+    async function checkDownloadLink(checkElement) {
+        const downloadUrl = checkElement.dataset.downloadUrl;
+        if (!downloadUrl) return;
+
+        setCheckState(checkElement, 'checking');
+
+        try {
+            const data = await postJSON('/check', { url: downloadUrl });
+            setCheckState(checkElement, data.ok ? 'valid' : 'invalid', data.status);
+        } catch (error) {
+            console.warn('下载链接检测失败:', error);
+            setCheckState(checkElement, 'invalid');
+        }
+    }
+
+    async function startAutomaticLinkChecks() {
+        if (linkChecksStarted) return;
+        linkChecksStarted = true;
+
+        const checkElements = Array.from(document.querySelectorAll(`.${CHECK_CLASS}`));
+        let nextIndex = 0;
+
+        async function worker() {
+            while (nextIndex < checkElements.length) {
+                const checkElement = checkElements[nextIndex];
+                nextIndex += 1;
+                await checkDownloadLink(checkElement);
+            }
+        }
+
+        const workers = Array.from(
+            { length: Math.min(LINK_CHECK_CONCURRENCY, checkElements.length) },
+            worker
+        );
+        await Promise.all(workers);
+    }
+
     function init() {
         bindCounters();
         loadCounts();
+        startAutomaticLinkChecks();
         document.addEventListener('click', handleDownloadClick, true);
     }
 
