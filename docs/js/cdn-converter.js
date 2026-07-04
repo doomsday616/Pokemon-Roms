@@ -102,16 +102,9 @@
         console.log(`✅ CDN 转换完成: ${convertedCount} 个资源已转换为 ${CONFIG.provider}`);
     }
 
-    // 初始化
-    function init() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', convertAllImages);
-        } else {
-            convertAllImages();
-        }
-
-        // 监听动态添加的图片
-        if (CONFIG.enabled && 'MutationObserver' in window) {
+    // 监听动态添加的图片
+    function observeDynamicImages() {
+        if (CONFIG.enabled && 'MutationObserver' in window && document.body) {
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     mutation.addedNodes.forEach((node) => {
@@ -138,6 +131,19 @@
                 childList: true,
                 subtree: true
             });
+        }
+    }
+
+    // 初始化
+    function init() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                convertAllImages();
+                observeDynamicImages();
+            });
+        } else {
+            convertAllImages();
+            observeDynamicImages();
         }
     }
 
