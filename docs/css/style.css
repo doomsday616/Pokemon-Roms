@@ -112,6 +112,16 @@ body {
     vertical-align: middle;
 }
 
+.download-count.is-loading {
+    color: #555;
+    background-color: rgba(108, 117, 125, 0.14);
+}
+
+.download-count.is-error {
+    color: #721c24;
+    background-color: rgba(220, 53, 69, 0.12);
+}
+
 /* Badge 徽章样式优化 */
 .list-group-item-warning {
     white-space: nowrap;         /* 防止换行 */

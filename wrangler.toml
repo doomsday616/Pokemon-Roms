@@ -1,0 +1,13 @@
+name = "pokemon-roms-counter"
+main = "workers/download-counter.js"
+compatibility_date = "2026-07-04"
+
+routes = [
+    { pattern = "pokemon-roms.top/api/download-counter*", zone_name = "pokemon-roms.top" }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pokemon-roms-counter"
+database_id = "9b08b4f9-ac49-4390-945c-2aa4d41faf73"
+migrations_dir = "migrations"
