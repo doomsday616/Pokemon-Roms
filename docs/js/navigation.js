@@ -43,14 +43,52 @@ function generateNavigation() {
         link.onclick = function(e) {
             e.preventDefault();
             section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            closeQuickNav();
         };
         navLinks.appendChild(link);
+    });
+}
+
+function closeQuickNav() {
+    const quickNav = document.getElementById('quickNav');
+    const toggle = document.getElementById('quickNavToggle');
+    if (!quickNav || !toggle) return;
+
+    quickNav.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', '打开游戏导航');
+}
+
+function setupQuickNavToggle() {
+    const quickNav = document.getElementById('quickNav');
+    const toggle = document.getElementById('quickNavToggle');
+    if (!quickNav || !toggle) return;
+
+    toggle.addEventListener('click', function(event) {
+        event.stopPropagation();
+        const isOpen = quickNav.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.setAttribute('aria-label', isOpen ? '关闭游戏导航' : '打开游戏导航');
+    });
+
+    document.addEventListener('click', function(event) {
+        if (!quickNav.classList.contains('is-open')) return;
+        if (quickNav.contains(event.target)) return;
+
+        closeQuickNav();
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeQuickNav();
+        }
     });
 }
 
 // 回到顶部功能
 function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    closeQuickNav();
 }
 
 // 显示/隐藏回到顶部按钮
@@ -64,4 +102,7 @@ window.addEventListener('scroll', function() {
 });
 
 // 页面加载时生成导航
-document.addEventListener('DOMContentLoaded', generateNavigation);
+document.addEventListener('DOMContentLoaded', function() {
+    generateNavigation();
+    setupQuickNavToggle();
+});

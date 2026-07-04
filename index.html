@@ -49,7 +49,7 @@
     
     <!-- 样式和脚本 -->
     <link href="./docs/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="./docs/css/style.css?v=layout-fix">
+    <link rel="stylesheet" href="./docs/css/style.css?v=mobile-sidebar">
     <script src="./docs/js/bootstrap.bundle.min.js"></script>
     <!-- CDN 加速脚本（可选，默认禁用）-->
     <script src="./docs/js/cdn-converter.js"></script>
@@ -3843,6 +3843,7 @@
 
     <!-- 快速导航 -->
     <div id="quickNav" class="quick-nav">
+        <button id="quickNavToggle" class="quick-nav-toggle" type="button" aria-controls="navLinks" aria-expanded="false" aria-label="打开游戏导航" title="游戏导航">导航</button>
         <div class="quick-nav-title">游戏导航</div>
         <div id="navLinks" class="nav-links"></div>
     </div>
@@ -3862,10 +3863,10 @@
     <script src="./docs/js/lazy-load.js"></script>
 
     <!-- 3. 快速导航生成 -->
-    <script src="./docs/js/navigation.js"></script>
+    <script src="./docs/js/navigation.js?v=mobile-sidebar"></script>
 
     <!-- 4. 下载点击计数 -->
-    <script src="./docs/js/download-counter.js?v=layout-fix"></script>
+    <script src="./docs/js/download-counter.js?v=mobile-sidebar"></script>
 
 </body>
 </html>

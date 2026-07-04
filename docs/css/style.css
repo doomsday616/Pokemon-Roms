@@ -81,6 +81,16 @@ body {
     gap: 4px 6px;
 }
 
+.download-option {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    max-width: 100%;
+    gap: 4px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
 .button-link {
     background: none;            /* 无背景 */
     color: blue;                 /* 链接蓝色 */
@@ -96,7 +106,7 @@ body {
     display: inline-flex;        /* Flexbox 布局 */
     align-items: center;         /* 垂直居中 */
     justify-content: center;     /* 水平居中 */
-    white-space: normal;
+    white-space: nowrap;
     overflow-wrap: anywhere;
     line-height: 1.35;
 }
@@ -376,6 +386,10 @@ body {
     color: white;
 }
 
+.quick-nav-toggle {
+    display: none;
+}
+
 /* 分页导航栏样式 */
 .section-navigation-bar {
     position: sticky;
@@ -451,9 +465,87 @@ body {
 
 /* 响应式设计 - 移动端优化 */
 @media (max-width: 768px) {
-    /* 隐藏快速导航 */
     .quick-nav {
-        display: none;
+        position: fixed;
+        top: calc(env(safe-area-inset-top, 0px) + 92px);
+        right: 0;
+        z-index: 1002;
+        display: block;
+        width: min(176px, calc(100vw - 54px));
+        max-height: calc(100vh - 118px);
+        max-height: calc(100dvh - 118px);
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(0, 123, 255, 0.2);
+        border-right: 0;
+        border-radius: 10px 0 0 10px;
+        box-shadow: -4px 4px 14px rgba(0, 0, 0, 0.18);
+        overflow: visible;
+        transform: translateX(100%);
+        transition: transform 0.24s ease;
+    }
+
+    .quick-nav.is-open {
+        transform: translateX(0);
+    }
+
+    .quick-nav-toggle {
+        position: absolute;
+        top: 12px;
+        left: -42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        min-height: 78px;
+        padding: 8px 4px;
+        border: 1px solid rgba(0, 123, 255, 0.3);
+        border-right: 0;
+        border-radius: 10px 0 0 10px;
+        background: rgba(0, 123, 255, 0.92);
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 1.1;
+        writing-mode: vertical-rl;
+        cursor: pointer;
+        box-shadow: -3px 3px 10px rgba(0, 0, 0, 0.18);
+    }
+
+    .quick-nav-toggle[aria-expanded="true"] {
+        background: rgba(0, 86, 179, 0.95);
+    }
+
+    .quick-nav-toggle:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: -4px;
+    }
+
+    .quick-nav .quick-nav-title {
+        font-size: 14px;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+    }
+
+    .quick-nav .nav-links {
+        max-height: calc(100vh - 210px);
+        max-height: calc(100dvh - 210px);
+        overflow-y: auto;
+        padding-right: 2px;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    .quick-nav .nav-link-item {
+        font-size: 12px;
+        padding: 7px 8px;
+    }
+
+    .quick-nav .nav-count-badge {
+        min-width: 26px;
+        margin-left: 6px;
+        padding: 1px 5px;
+        font-size: 10px;
     }
     
     /* 优化回到顶部按钮 */
@@ -543,6 +635,10 @@ body {
         font-size: 12px;
         padding: 8px 10px;
     }
+
+    .list-group-item-danger {
+        gap: 3px 5px;
+    }
     
     /* 优化卡片图片布局 */
     .card .row.g-0 {
@@ -580,6 +676,11 @@ body {
     .button-link {
         font-size: 12px;
         min-height: 36px;
+    }
+
+    .download-option {
+        gap: 3px;
+        max-width: 100%;
     }
 
     .download-count {

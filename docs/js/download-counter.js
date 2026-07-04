@@ -7,6 +7,7 @@
     'use strict';
 
     const DOWNLOAD_SELECTOR = '.list-group-item-danger .button-link[onclick*="window.open"]';
+    const OPTION_CLASS = 'download-option';
     const DEFAULT_API_BASE = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
         ? 'https://pokemon-roms.top/api/download-counter'
         : '/api/download-counter';
@@ -45,6 +46,18 @@
         });
     }
 
+    function wrapDownloadButton(button) {
+        if (button.parentElement && button.parentElement.classList.contains(OPTION_CLASS)) {
+            return button.parentElement;
+        }
+
+        const option = document.createElement('span');
+        option.className = OPTION_CLASS;
+        button.insertAdjacentElement('beforebegin', option);
+        option.appendChild(button);
+        return option;
+    }
+
     function addCounter(button) {
         const url = extractDownloadUrl(button);
         if (!url) return;
@@ -52,6 +65,7 @@
         const downloadKey = keyForUrl(url);
         button.dataset.downloadKey = downloadKey;
         keys.add(downloadKey);
+        const option = wrapDownloadButton(button);
 
         if (button.nextElementSibling && button.nextElementSibling.classList.contains('download-count')) {
             button.nextElementSibling.dataset.downloadKey = downloadKey;
@@ -64,7 +78,7 @@
         counter.dataset.downloadKey = downloadKey;
         counter.textContent = formatCount();
         counter.setAttribute('aria-label', counter.textContent);
-        button.insertAdjacentElement('afterend', counter);
+        option.appendChild(counter);
     }
 
     function bindCounters() {
