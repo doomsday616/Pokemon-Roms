@@ -5,6 +5,11 @@ const ALLOWED_ORIGINS = new Set([
     'http://localhost:8787'
 ]);
 
+const ALLOWED_KEY_PREFIXES = [
+    'https://exp-games.github.io/Pokemon-Roms/',
+    'https://pan.baidu.com/'
+];
+
 function corsHeaders(request) {
     const origin = request.headers.get('Origin');
     const allowOrigin = ALLOWED_ORIGINS.has(origin) ? origin : 'https://pokemon-roms.top';
@@ -41,6 +46,7 @@ function cleanKey(value) {
 
     const key = value.trim();
     if (!key || key.length > 2048) return '';
+    if (!ALLOWED_KEY_PREFIXES.some(prefix => key.startsWith(prefix))) return '';
     return key;
 }
 
