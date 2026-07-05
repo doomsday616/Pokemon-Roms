@@ -11,7 +11,7 @@
     const LABEL_CLASS = 'download-label';
     const CHECK_CLASS = 'download-check';
     const LINK_CHECK_CONCURRENCY = 6;
-    const MIN_LABEL_FONT_SIZE = 8;
+    const MIN_LABEL_FONT_SIZE = 6.5;
     const DEFAULT_API_BASE = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
         ? 'https://pokemon-roms.top/api/download-counter'
         : '/api/download-counter';
@@ -21,6 +21,7 @@
     const keys = new Set();
     let linkChecksStarted = false;
     let fitScheduled = false;
+    let measureElement = null;
 
     function extractDownloadUrl(button) {
         const inlineHandler = button.getAttribute('onclick') || '';
@@ -83,10 +84,43 @@
         labelElement.className = LABEL_CLASS;
         labelElement.textContent = label;
         labelElement.title = label;
+        const compactLength = label.replace(/\s+/g, '').length;
+        if (compactLength >= 8 || /\b(?:GBA|GBC|CIA)\b|20\d{2}/i.test(label)) {
+            labelElement.classList.add('is-compact');
+        }
+        if (compactLength >= 16) {
+            labelElement.classList.add('is-tight');
+        }
         button.appendChild(labelElement);
 
         button.dataset.optionEnhanced = 'true';
         return button;
+    }
+
+    function getMeasureElement() {
+        if (measureElement) return measureElement;
+
+        measureElement = document.createElement('span');
+        measureElement.style.position = 'fixed';
+        measureElement.style.left = '-9999px';
+        measureElement.style.top = '-9999px';
+        measureElement.style.visibility = 'hidden';
+        measureElement.style.whiteSpace = 'nowrap';
+        measureElement.style.pointerEvents = 'none';
+        document.body.appendChild(measureElement);
+        return measureElement;
+    }
+
+    function measureLabelWidth(label, fontSize) {
+        const styles = window.getComputedStyle(label);
+        const measure = getMeasureElement();
+        measure.textContent = label.textContent;
+        measure.style.fontFamily = styles.fontFamily;
+        measure.style.fontWeight = styles.fontWeight;
+        measure.style.fontStyle = styles.fontStyle;
+        measure.style.letterSpacing = styles.letterSpacing;
+        measure.style.fontSize = `${fontSize}px`;
+        return measure.getBoundingClientRect().width;
     }
 
     function fitDownloadLabel(option) {
@@ -99,23 +133,17 @@
         option.dataset.labelFontSize = String(defaultSize);
         label.style.fontSize = `${defaultSize}px`;
 
-        if (label.scrollWidth <= label.clientWidth + 1) return;
+        const availableWidth = label.clientWidth;
+        if (availableWidth <= 0) return;
 
-        let low = MIN_LABEL_FONT_SIZE;
-        let high = defaultSize;
+        const naturalWidth = measureLabelWidth(label, defaultSize);
+        if (naturalWidth <= availableWidth + 1) return;
 
-        while (high - low > 0.25) {
-            const mid = (low + high) / 2;
-            label.style.fontSize = `${mid}px`;
-
-            if (label.scrollWidth <= label.clientWidth + 1) {
-                low = mid;
-            } else {
-                high = mid;
-            }
-        }
-
-        label.style.fontSize = `${Math.max(MIN_LABEL_FONT_SIZE, Math.floor(low * 10) / 10)}px`;
+        const nextSize = Math.max(
+            MIN_LABEL_FONT_SIZE,
+            Math.floor((defaultSize * availableWidth / naturalWidth) * 10) / 10
+        );
+        label.style.fontSize = `${nextSize}px`;
     }
 
     function fitDownloadLabels() {
@@ -340,6 +368,7 @@
         startAutomaticLinkChecks();
         document.addEventListener('click', handleDownloadClick, true);
         window.addEventListener('resize', scheduleFitDownloadLabels);
+        window.addEventListener('sectionChanged', scheduleFitDownloadLabels);
     }
 
     if (document.readyState === 'loading') {
