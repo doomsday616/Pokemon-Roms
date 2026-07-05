@@ -2,7 +2,11 @@ const ALLOWED_ORIGINS = new Set([
     'https://pokemon-roms.top',
     'http://pokemon-roms.top',
     'http://127.0.0.1:8787',
-    'http://localhost:8787'
+    'http://localhost:8787',
+    'http://127.0.0.1:4173',
+    'http://localhost:4173',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000'
 ]);
 
 const ALLOWED_KEY_PREFIXES = [
@@ -104,6 +108,18 @@ async function ensureSchema(env) {
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     `).run();
+
+    await env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS site_visit_counts (
+            visit_key TEXT PRIMARY KEY,
+            count INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `).run();
+}
+
+function shanghaiDateKey(date = new Date()) {
+    return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 async function getCounts(env, keys) {
@@ -164,6 +180,47 @@ async function handleIncrement(request, env) {
     return jsonResponse(request, { key, count: Number(row?.count) || 1 });
 }
 
+async function handleVisit(request, env) {
+    await ensureSchema(env);
+
+    const todayKey = `day:${shanghaiDateKey()}`;
+    const totalKey = 'total';
+
+    await env.DB.batch([
+        env.DB.prepare(`
+            INSERT INTO site_visit_counts (visit_key, count, updated_at)
+            VALUES (?, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT(visit_key) DO UPDATE SET
+                count = count + 1,
+                updated_at = CURRENT_TIMESTAMP
+        `).bind(totalKey),
+        env.DB.prepare(`
+            INSERT INTO site_visit_counts (visit_key, count, updated_at)
+            VALUES (?, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT(visit_key) DO UPDATE SET
+                count = count + 1,
+                updated_at = CURRENT_TIMESTAMP
+        `).bind(todayKey)
+    ]);
+
+    const result = await env.DB.prepare(`
+        SELECT visit_key, count
+        FROM site_visit_counts
+        WHERE visit_key IN (?, ?)
+    `).bind(totalKey, todayKey).all();
+
+    const counts = Object.fromEntries(
+        (result.results || []).map(row => [row.visit_key, Number(row.count) || 0])
+    );
+
+    return jsonResponse(request, {
+        today: counts[todayKey] || 0,
+        total: counts[totalKey] || 0,
+        date: todayKey.slice(4),
+        timezone: 'Asia/Shanghai'
+    });
+}
+
 async function handleCheck(request) {
     const body = await readJSON(request);
     const downloadUrl = cleanKey(body?.url);
@@ -209,6 +266,10 @@ export default {
 
         if (request.method === 'POST' && url.pathname === '/api/download-counter/counts') {
             return handleCounts(request, env);
+        }
+
+        if (request.method === 'POST' && url.pathname === '/api/download-counter/visits') {
+            return handleVisit(request, env);
         }
 
         if (request.method === 'POST' && url.pathname === '/api/download-counter/increment') {

@@ -11,6 +11,7 @@
     const LABEL_CLASS = 'download-label';
     const CHECK_CLASS = 'download-check';
     const LINK_CHECK_CONCURRENCY = 6;
+    const MIN_LABEL_FONT_SIZE = 8;
     const DEFAULT_API_BASE = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
         ? 'https://pokemon-roms.top/api/download-counter'
         : '/api/download-counter';
@@ -19,6 +20,7 @@
     const counts = {};
     const keys = new Set();
     let linkChecksStarted = false;
+    let fitScheduled = false;
 
     function extractDownloadUrl(button) {
         const inlineHandler = button.getAttribute('onclick') || '';
@@ -48,6 +50,8 @@
             counter.textContent = label;
             counter.setAttribute('aria-label', label);
         });
+
+        scheduleFitDownloadLabels();
     }
 
     function directChildByClass(parent, className) {
@@ -78,10 +82,54 @@
         const labelElement = document.createElement('span');
         labelElement.className = LABEL_CLASS;
         labelElement.textContent = label;
+        labelElement.title = label;
         button.appendChild(labelElement);
 
         button.dataset.optionEnhanced = 'true';
         return button;
+    }
+
+    function fitDownloadLabel(option) {
+        const label = directChildByClass(option, LABEL_CLASS);
+        if (!label) return;
+
+        const defaultSize = Number(option.dataset.labelFontSize)
+            || parseFloat(window.getComputedStyle(label).fontSize)
+            || 12;
+        option.dataset.labelFontSize = String(defaultSize);
+        label.style.fontSize = `${defaultSize}px`;
+
+        if (label.scrollWidth <= label.clientWidth + 1) return;
+
+        let low = MIN_LABEL_FONT_SIZE;
+        let high = defaultSize;
+
+        while (high - low > 0.25) {
+            const mid = (low + high) / 2;
+            label.style.fontSize = `${mid}px`;
+
+            if (label.scrollWidth <= label.clientWidth + 1) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+
+        label.style.fontSize = `${Math.max(MIN_LABEL_FONT_SIZE, Math.floor(low * 10) / 10)}px`;
+    }
+
+    function fitDownloadLabels() {
+        document.querySelectorAll(`.${OPTION_CLASS}`).forEach(fitDownloadLabel);
+    }
+
+    function scheduleFitDownloadLabels() {
+        if (fitScheduled) return;
+        fitScheduled = true;
+
+        window.requestAnimationFrame(() => {
+            fitScheduled = false;
+            fitDownloadLabels();
+        });
     }
 
     function setCheckState(checkElement, state, status) {
@@ -92,6 +140,7 @@
             checkElement.textContent = '检测中';
             checkElement.title = '正在自动检测下载链接';
             checkElement.setAttribute('aria-label', '正在自动检测下载链接');
+            scheduleFitDownloadLabels();
             return;
         }
 
@@ -100,6 +149,7 @@
             checkElement.textContent = '有效';
             checkElement.title = status ? `链接有效，HTTP ${status}` : '链接有效';
             checkElement.setAttribute('aria-label', checkElement.title);
+            scheduleFitDownloadLabels();
             return;
         }
 
@@ -108,12 +158,14 @@
             checkElement.textContent = '无效';
             checkElement.title = status ? `链接无效，HTTP ${status}` : '链接无效或检测失败';
             checkElement.setAttribute('aria-label', checkElement.title);
+            scheduleFitDownloadLabels();
             return;
         }
 
         checkElement.textContent = '待检测';
         checkElement.title = '等待自动检测下载链接';
         checkElement.setAttribute('aria-label', '等待自动检测下载链接');
+        scheduleFitDownloadLabels();
     }
 
     function addLinkChecker(option, downloadKey) {
@@ -153,6 +205,7 @@
         }
 
         addLinkChecker(option, downloadKey);
+        scheduleFitDownloadLabels();
     }
 
     function bindCounters() {
@@ -184,6 +237,7 @@
                 }
             });
         });
+        scheduleFitDownloadLabels();
     }
 
     function markCountersError(downloadKeys) {
@@ -197,6 +251,7 @@
                 }
             });
         });
+        scheduleFitDownloadLabels();
     }
 
     async function loadCounts() {
@@ -284,6 +339,7 @@
         loadCounts();
         startAutomaticLinkChecks();
         document.addEventListener('click', handleDownloadClick, true);
+        window.addEventListener('resize', scheduleFitDownloadLabels);
     }
 
     if (document.readyState === 'loading') {
