@@ -11,8 +11,8 @@
         : '/api/download-counter';
     const API_BASE = (window.DOWNLOAD_COUNTER_API || DEFAULT_API_BASE).replace(/\/$/, '');
     const locale = 'zh-CN';
-    const EXPAND_ANIMATION_MS = 220;
-    const SHRINK_ANIMATION_MS = 160;
+    const EXPAND_ANIMATION_MS = 240;
+    const SHRINK_ANIMATION_MS = 180;
     const today = new Date();
     let visibleYear = today.getFullYear();
     let visibleMonth = today.getMonth();
@@ -208,6 +208,16 @@
 
         document.getElementById('visitCounterSummary').addEventListener('click', () => {
             setExpanded(!counter.classList.contains('is-expanded'));
+        });
+        document.addEventListener('pointerdown', event => {
+            if (counter.contains(event.target)) return;
+            if (!counter.classList.contains('is-expanded')) return;
+            setExpanded(false);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && counter.classList.contains('is-expanded')) {
+                setExpanded(false);
+            }
         });
         document.getElementById('visitPrevMonth').addEventListener('click', event => {
             event.stopPropagation();
