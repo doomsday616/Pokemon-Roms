@@ -122,6 +122,26 @@ function shanghaiDateKey(date = new Date()) {
     return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+function cleanMonth(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}$/.test(value)) {
+        return shanghaiDateKey().slice(0, 7);
+    }
+
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(5, 7));
+    if (year < 2000 || year > 2100 || month < 1 || month > 12) {
+        return shanghaiDateKey().slice(0, 7);
+    }
+
+    return value;
+}
+
+function lastDayOfMonth(monthKey) {
+    const year = Number(monthKey.slice(0, 4));
+    const month = Number(monthKey.slice(5, 7));
+    return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
 async function getCounts(env, keys) {
     const counts = Object.fromEntries(keys.map(key => [key, 0]));
     const chunkSize = 90;
@@ -221,6 +241,33 @@ async function handleVisit(request, env) {
     });
 }
 
+async function handleVisitHistory(request, env) {
+    const body = await readJSON(request);
+    const month = cleanMonth(body?.month);
+    const startKey = `day:${month}-01`;
+    const endKey = `day:${month}-${String(lastDayOfMonth(month)).padStart(2, '0')}`;
+
+    await ensureSchema(env);
+    const result = await env.DB.prepare(`
+        SELECT visit_key, count
+        FROM site_visit_counts
+        WHERE visit_key >= ? AND visit_key <= ?
+        ORDER BY visit_key ASC
+    `).bind(startKey, endKey).all();
+
+    const days = {};
+    (result.results || []).forEach(row => {
+        days[String(row.visit_key).slice(4)] = Number(row.count) || 0;
+    });
+
+    return jsonResponse(request, {
+        month,
+        days,
+        today: shanghaiDateKey(),
+        timezone: 'Asia/Shanghai'
+    });
+}
+
 async function handleCheck(request) {
     const body = await readJSON(request);
     const downloadUrl = cleanKey(body?.url);
@@ -270,6 +317,10 @@ export default {
 
         if (request.method === 'POST' && url.pathname === '/api/download-counter/visits') {
             return handleVisit(request, env);
+        }
+
+        if (request.method === 'POST' && url.pathname === '/api/download-counter/visits/history') {
+            return handleVisitHistory(request, env);
         }
 
         if (request.method === 'POST' && url.pathname === '/api/download-counter/increment') {
