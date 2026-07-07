@@ -11,10 +11,14 @@
         : '/api/download-counter';
     const API_BASE = (window.DOWNLOAD_COUNTER_API || DEFAULT_API_BASE).replace(/\/$/, '');
     const locale = 'zh-CN';
+    const EXPAND_ANIMATION_MS = 220;
+    const SHRINK_ANIMATION_MS = 160;
     const today = new Date();
     let visibleYear = today.getFullYear();
     let visibleMonth = today.getMonth();
     let latestVisitData = null;
+    let animationTimer = null;
+    let calendarTimer = null;
 
     function formatNumber(value) {
         const number = Number(value) || 0;
@@ -163,15 +167,35 @@
         }
     }
 
+    function clearVisitTimers() {
+        window.clearTimeout(animationTimer);
+        window.clearTimeout(calendarTimer);
+    }
+
     function setExpanded(expanded) {
         const counter = document.getElementById('siteVisitCounter');
         const summary = document.getElementById('visitCounterSummary');
-        counter.classList.toggle('is-expanded', expanded);
+        const isExpanded = counter.classList.contains('is-expanded');
+        if (expanded === isExpanded && !counter.classList.contains('is-shrinking')) return;
+
+        clearVisitTimers();
         summary.setAttribute('aria-expanded', String(expanded));
 
         if (expanded) {
-            loadCalendar();
+            counter.classList.remove('is-shrinking');
+            counter.classList.add('is-expanded', 'is-growing');
+            animationTimer = window.setTimeout(() => {
+                counter.classList.remove('is-growing');
+            }, EXPAND_ANIMATION_MS);
+            calendarTimer = window.setTimeout(loadCalendar, EXPAND_ANIMATION_MS);
+            return;
         }
+
+        counter.classList.remove('is-growing');
+        counter.classList.add('is-shrinking');
+        animationTimer = window.setTimeout(() => {
+            counter.classList.remove('is-expanded', 'is-shrinking');
+        }, SHRINK_ANIMATION_MS);
     }
 
     async function recordVisit() {
