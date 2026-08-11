@@ -10,19 +10,27 @@
         ? 'https://pokemon-roms.top/api/download-counter'
         : '/api/download-counter';
     const API_BASE = (window.DOWNLOAD_COUNTER_API || DEFAULT_API_BASE).replace(/\/$/, '');
-    const locale = 'zh-CN';
     const EXPAND_ANIMATION_MS = 240;
     const SHRINK_ANIMATION_MS = 180;
     const today = new Date();
     let visibleYear = today.getFullYear();
     let visibleMonth = today.getMonth();
     let latestVisitData = null;
+    let latestHistoryData = null;
     let animationTimer = null;
     let calendarTimer = null;
 
+    function visitText(key, fallback, replacements) {
+        return window.siteI18n?.t(key, replacements) || fallback;
+    }
+
+    function locale() {
+        return window.siteI18n?.getLocale() || 'zh-CN';
+    }
+
     function formatNumber(value) {
         const number = Number(value) || 0;
-        return number.toLocaleString(locale);
+        return number.toLocaleString(locale());
     }
 
     function monthKey(year, monthIndex) {
@@ -34,7 +42,7 @@
     }
 
     function monthLabel(year, monthIndex) {
-        return new Intl.DateTimeFormat(locale, {
+        return new Intl.DateTimeFormat(locale(), {
             year: 'numeric',
             month: 'long'
         }).format(new Date(year, monthIndex, 1));
@@ -45,7 +53,7 @@
         return Array.from({ length: 7 }, (_, index) => {
             const date = new Date(monday);
             date.setDate(monday.getDate() + index);
-            return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
+            return new Intl.DateTimeFormat(locale(), { weekday: 'short' }).format(date);
         });
     }
 
@@ -70,32 +78,32 @@
         const counter = document.createElement('aside');
         counter.id = 'siteVisitCounter';
         counter.className = 'site-visit-counter is-loading';
-        counter.setAttribute('aria-label', '网站访问量');
+        counter.setAttribute('aria-label', visitText('visit.label', '网站访问量'));
         counter.innerHTML = `
             <button id="visitCounterSummary" class="visit-counter-summary" type="button" aria-expanded="false" aria-controls="visitDashboard">
                 <span class="visit-counter-header">
                     <span class="visit-counter-dot" aria-hidden="true"></span>
-                    <span>实时访问量</span>
+                    <span id="visitLiveLabel">${visitText('visit.live', '实时访问量')}</span>
                 </span>
                 <span class="visit-counter-grid">
                     <span class="visit-counter-item">
-                        <span class="visit-counter-label">今日</span>
+                        <span id="visitTodayLabel" class="visit-counter-label">${visitText('visit.today', '今日')}</span>
                         <strong id="visitTodayCount">--</strong>
                     </span>
                     <span class="visit-counter-item">
-                        <span class="visit-counter-label">累计</span>
+                        <span id="visitTotalLabel" class="visit-counter-label">${visitText('visit.total', '累计')}</span>
                         <strong id="visitTotalCount">--</strong>
                     </span>
                 </span>
             </button>
-            <section id="visitDashboard" class="visit-dashboard" aria-label="每日访问量日历">
+            <section id="visitDashboard" class="visit-dashboard" aria-label="${visitText('visit.calendar', '每日访问量日历')}">
                 <div class="visit-dashboard-top">
-                    <button id="visitPrevMonth" class="visit-month-button" type="button" aria-label="上个月">‹</button>
+                    <button id="visitPrevMonth" class="visit-month-button" type="button" aria-label="${visitText('visit.previousMonth', '上个月')}">‹</button>
                     <div class="visit-month-copy">
-                        <span>每日访问量</span>
+                        <span id="visitDailyLabel">${visitText('visit.daily', '每日访问量')}</span>
                         <strong id="visitMonthLabel"></strong>
                     </div>
-                    <button id="visitNextMonth" class="visit-month-button" type="button" aria-label="下个月">›</button>
+                    <button id="visitNextMonth" class="visit-month-button" type="button" aria-label="${visitText('visit.nextMonth', '下个月')}">›</button>
                 </div>
                 <div id="visitWeekdays" class="visit-weekdays"></div>
                 <div id="visitCalendarGrid" class="visit-calendar-grid" aria-live="polite"></div>
@@ -137,8 +145,12 @@
             const key = dateKey(visibleYear, visibleMonth, day);
             const count = Number(history.days?.[key]) || 0;
             const isToday = key === history.today;
+            const dayTitle = visitText('visit.dayTitle', `${key} 访问量 ${formatNumber(count)}`, {
+                date: key,
+                count: formatNumber(count)
+            });
             cells.push(`
-                <span class="visit-day${isToday ? ' is-today' : ''}${count ? ' has-visits' : ''}" title="${key} 访问量 ${formatNumber(count)}">
+                <span class="visit-day${isToday ? ' is-today' : ''}${count ? ' has-visits' : ''}" title="${dayTitle}">
                     <span class="visit-day-number">${day}</span>
                     <strong>${formatNumber(count)}</strong>
                 </span>
@@ -156,12 +168,13 @@
             const history = await postJSON('/visits/history', {
                 month: monthKey(visibleYear, visibleMonth)
             });
+            latestHistoryData = history;
             renderCalendar(history);
             counter.classList.remove('is-calendar-error');
         } catch (error) {
             console.warn('访问量日历加载失败:', error);
             counter.classList.add('is-calendar-error');
-            document.getElementById('visitCalendarGrid').innerHTML = '<span class="visit-calendar-error">日历暂不可用</span>';
+            document.getElementById('visitCalendarGrid').innerHTML = `<span class="visit-calendar-error">${visitText('visit.calendarUnavailable', '日历暂不可用')}</span>`;
         } finally {
             counter.classList.remove('is-calendar-loading');
         }
@@ -200,6 +213,37 @@
 
     async function recordVisit() {
         return postJSON('/visits', { path: window.location.pathname || '/' });
+    }
+
+    function refreshVisitLanguage() {
+        const counter = document.getElementById('siteVisitCounter');
+        if (!counter) return;
+
+        counter.setAttribute('aria-label', visitText('visit.label', '网站访问量'));
+        document.getElementById('visitLiveLabel').textContent = visitText('visit.live', '实时访问量');
+        document.getElementById('visitTodayLabel').textContent = visitText('visit.today', '今日');
+        document.getElementById('visitTotalLabel').textContent = visitText('visit.total', '累计');
+        document.getElementById('visitDailyLabel').textContent = visitText('visit.daily', '每日访问量');
+        document.getElementById('visitDashboard').setAttribute('aria-label', visitText('visit.calendar', '每日访问量日历'));
+        document.getElementById('visitPrevMonth').setAttribute('aria-label', visitText('visit.previousMonth', '上个月'));
+        document.getElementById('visitNextMonth').setAttribute('aria-label', visitText('visit.nextMonth', '下个月'));
+        renderWeekdays();
+
+        if (latestVisitData) {
+            updateSummary(latestVisitData);
+            counter.title = visitText('visit.summaryTitle', '', {
+                today: formatNumber(latestVisitData.today),
+                total: formatNumber(latestVisitData.total)
+            });
+        }
+        if (latestHistoryData) renderCalendar(latestHistoryData);
+        if (counter.classList.contains('is-calendar-error')) {
+            document.getElementById('visitCalendarGrid').innerHTML = `<span class="visit-calendar-error">${visitText('visit.calendarUnavailable', '日历暂不可用')}</span>`;
+        }
+        if (counter.classList.contains('is-error')) {
+            document.getElementById('visitTodayCount').textContent = visitText('common.unavailable', '暂不可用');
+            document.getElementById('visitTotalCount').textContent = visitText('common.unavailable', '暂不可用');
+        }
     }
 
     async function init() {
@@ -242,15 +286,20 @@
             latestVisitData = await recordVisit();
             updateSummary(latestVisitData);
             counter.classList.remove('is-loading', 'is-error');
-            counter.title = `今日访问量 ${formatNumber(latestVisitData.today)}，累计访问量 ${formatNumber(latestVisitData.total)}`;
+            counter.title = visitText('visit.summaryTitle', `今日访问量 ${formatNumber(latestVisitData.today)}，累计访问量 ${formatNumber(latestVisitData.total)}`, {
+                today: formatNumber(latestVisitData.today),
+                total: formatNumber(latestVisitData.total)
+            });
         } catch (error) {
             console.warn('访问量计数加载失败:', error);
             counter.classList.remove('is-loading');
             counter.classList.add('is-error');
-            document.getElementById('visitTodayCount').textContent = '暂不可用';
-            document.getElementById('visitTotalCount').textContent = '暂不可用';
+            document.getElementById('visitTodayCount').textContent = visitText('common.unavailable', '暂不可用');
+            document.getElementById('visitTotalCount').textContent = visitText('common.unavailable', '暂不可用');
         }
     }
+
+    window.addEventListener('siteLanguageChanged', refreshVisitLanguage);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

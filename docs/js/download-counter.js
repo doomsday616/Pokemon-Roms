@@ -23,6 +23,10 @@
     let fitScheduled = false;
     let measureElement = null;
 
+    function counterText(key, fallback, replacements) {
+        return window.siteI18n?.t(key, replacements) || fallback;
+    }
+
     function extractDownloadUrl(button) {
         const inlineHandler = button.getAttribute('onclick') || '';
         const match = inlineHandler.match(/window\.open\(['"]([^'"]+)['"]/);
@@ -40,7 +44,17 @@
     }
 
     function formatCount(count) {
-        return Number.isFinite(count) ? `下载 ${count} 次` : '下载 -- 次';
+        const formattedCount = Number.isFinite(count)
+            ? count.toLocaleString(window.siteI18n?.getLocale() || 'zh-CN')
+            : '--';
+        return counterText('download.count', `下载 ${formattedCount} 次`, { count: formattedCount });
+    }
+
+    function formatCountLabel(count) {
+        const formattedCount = Number.isFinite(count)
+            ? count.toLocaleString(window.siteI18n?.getLocale() || 'zh-CN')
+            : '--';
+        return counterText('download.countLabel', `下载 ${formattedCount} 次`, { count: formattedCount });
     }
 
     function updateCounters(downloadKey) {
@@ -49,7 +63,7 @@
 
             const label = formatCount(counts[downloadKey]);
             counter.textContent = label;
-            counter.setAttribute('aria-label', label);
+            counter.setAttribute('aria-label', formatCountLabel(counts[downloadKey]));
         });
 
         scheduleFitDownloadLabels();
@@ -67,10 +81,17 @@
             .map(node => node.textContent)
             .join('')
             .trim();
-        const rawLabel = textNodes || button.textContent.trim();
-        const label = rawLabel.replace(/^\[(.+)\]$/, '$1') || '下载';
+        const rawLabel = button.dataset.i18nDownloadLabel || textNodes || button.textContent.trim();
+        const translatedLabel = window.siteI18n?.translateDownloadLabel(rawLabel) || rawLabel;
+        const label = translatedLabel.replace(/^\[(.+)\]$/, '$1') || '下载';
         button.dataset.downloadLabel = label;
         return label;
+    }
+
+    function applyLabelDensity(labelElement, label) {
+        const compactLength = label.replace(/\s+/g, '').length;
+        labelElement.classList.toggle('is-compact', compactLength >= 8 || /\b(?:GBA|GBC|CIA)\b|20\d{2}/i.test(label));
+        labelElement.classList.toggle('is-tight', compactLength >= 16);
     }
 
     function enhanceDownloadButton(button) {
@@ -83,14 +104,8 @@
         const labelElement = document.createElement('span');
         labelElement.className = LABEL_CLASS;
         labelElement.textContent = label;
-        labelElement.title = label;
-        const compactLength = label.replace(/\s+/g, '').length;
-        if (compactLength >= 8 || /\b(?:GBA|GBC|CIA)\b|20\d{2}/i.test(label)) {
-            labelElement.classList.add('is-compact');
-        }
-        if (compactLength >= 16) {
-            labelElement.classList.add('is-tight');
-        }
+        labelElement.title = window.siteI18n?.describeDownloadLabel(button.dataset.i18nDownloadLabel) || label;
+        applyLabelDensity(labelElement, label);
         button.appendChild(labelElement);
 
         button.dataset.optionEnhanced = 'true';
@@ -162,20 +177,23 @@
 
     function setCheckState(checkElement, state, status) {
         checkElement.classList.remove('is-checking', 'is-valid', 'is-invalid');
+        checkElement.dataset.checkState = state;
+        checkElement.dataset.checkStatus = status || '';
 
         if (state === 'checking') {
             checkElement.classList.add('is-checking');
-            checkElement.textContent = '检测中';
-            checkElement.title = '正在自动检测下载链接';
-            checkElement.setAttribute('aria-label', '正在自动检测下载链接');
+            checkElement.textContent = counterText('link.checking', '检测中');
+            checkElement.title = counterText('link.checkingLabel', '正在自动检测下载链接');
+            checkElement.setAttribute('aria-label', checkElement.title);
             scheduleFitDownloadLabels();
             return;
         }
 
         if (state === 'valid') {
             checkElement.classList.add('is-valid');
-            checkElement.textContent = '有效';
-            checkElement.title = status ? `链接有效，HTTP ${status}` : '链接有效';
+            checkElement.textContent = counterText('link.valid', '有效');
+            const validLabel = counterText('link.validLabel', '链接有效');
+            checkElement.title = status ? `${validLabel}, HTTP ${status}` : validLabel;
             checkElement.setAttribute('aria-label', checkElement.title);
             scheduleFitDownloadLabels();
             return;
@@ -183,16 +201,17 @@
 
         if (state === 'invalid') {
             checkElement.classList.add('is-invalid');
-            checkElement.textContent = '无效';
-            checkElement.title = status ? `链接无效，HTTP ${status}` : '链接无效或检测失败';
+            checkElement.textContent = counterText('link.invalid', '无效');
+            const invalidLabel = counterText('link.invalidLabel', '链接无效或检测失败');
+            checkElement.title = status ? `${invalidLabel}, HTTP ${status}` : invalidLabel;
             checkElement.setAttribute('aria-label', checkElement.title);
             scheduleFitDownloadLabels();
             return;
         }
 
-        checkElement.textContent = '待检测';
-        checkElement.title = '等待自动检测下载链接';
-        checkElement.setAttribute('aria-label', '等待自动检测下载链接');
+        checkElement.textContent = counterText('link.pending', '待检测');
+        checkElement.title = counterText('link.pendingLabel', '等待自动检测下载链接');
+        checkElement.setAttribute('aria-label', checkElement.title);
         scheduleFitDownloadLabels();
     }
 
@@ -228,7 +247,7 @@
             counter.className = 'download-count is-loading';
             counter.dataset.downloadKey = downloadKey;
             counter.textContent = formatCount();
-            counter.setAttribute('aria-label', counter.textContent);
+            counter.setAttribute('aria-label', formatCountLabel());
             option.appendChild(counter);
         }
 
@@ -274,8 +293,8 @@
                 if (counter.dataset.downloadKey === downloadKey) {
                     counter.classList.remove('is-loading');
                     counter.classList.add('is-error');
-                    counter.textContent = '计数暂不可用';
-                    counter.setAttribute('aria-label', '下载计数暂不可用');
+                    counter.textContent = counterText('download.unavailable', '计数暂不可用');
+                    counter.setAttribute('aria-label', counterText('download.unavailableLabel', '下载计数暂不可用'));
                 }
             });
         });
@@ -362,6 +381,36 @@
         await Promise.all(workers);
     }
 
+    function refreshDownloadLanguage() {
+        document.querySelectorAll(`.${OPTION_CLASS}`).forEach(option => {
+            const sourceLabel = option.dataset.i18nDownloadLabel || option.dataset.downloadLabel || '';
+            const translatedLabel = window.siteI18n?.translateDownloadLabel(sourceLabel) || sourceLabel;
+            const label = directChildByClass(option, LABEL_CLASS);
+            if (label) {
+                label.textContent = translatedLabel.replace(/^\[(.+)\]$/, '$1');
+                label.title = window.siteI18n?.describeDownloadLabel(sourceLabel) || label.textContent;
+                applyLabelDensity(label, label.textContent);
+            }
+        });
+
+        document.querySelectorAll('.download-count').forEach(counter => {
+            const downloadKey = counter.dataset.downloadKey;
+            if (counter.classList.contains('is-error')) {
+                counter.textContent = counterText('download.unavailable', '计数暂不可用');
+                counter.setAttribute('aria-label', counterText('download.unavailableLabel', '下载计数暂不可用'));
+            } else {
+                const label = formatCount(counts[downloadKey]);
+                counter.textContent = label;
+                counter.setAttribute('aria-label', formatCountLabel(counts[downloadKey]));
+            }
+        });
+
+        document.querySelectorAll(`.${CHECK_CLASS}`).forEach(checkElement => {
+            setCheckState(checkElement, checkElement.dataset.checkState || 'pending', checkElement.dataset.checkStatus);
+        });
+        scheduleFitDownloadLabels();
+    }
+
     function init() {
         bindCounters();
         loadCounts();
@@ -369,6 +418,7 @@
         document.addEventListener('click', handleDownloadClick, true);
         window.addEventListener('resize', scheduleFitDownloadLabels);
         window.addEventListener('sectionChanged', scheduleFitDownloadLabels);
+        window.addEventListener('siteLanguageChanged', refreshDownloadLanguage);
     }
 
     if (document.readyState === 'loading') {

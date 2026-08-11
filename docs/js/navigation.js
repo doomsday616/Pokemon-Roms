@@ -1,7 +1,13 @@
 // 自动生成导航链接
+function navigationText(key, fallback) {
+    return window.siteI18n?.t(key) || fallback;
+}
+
 function generateNavigation() {
     const sections = document.querySelectorAll('h4[id^="section-"]');
     const navLinks = document.getElementById('navLinks');
+    if (!navLinks) return;
+    navLinks.textContent = '';
     
     sections.forEach(section => {
         // 找到该系列下的所有卡片
@@ -29,7 +35,7 @@ function generateNavigation() {
         link.className = 'nav-link-item';
         
         // 创建文本节点和数量徽章
-        const titleText = section.textContent.replace('系列', '');
+        const titleText = section.textContent.trim();
         const textSpan = document.createElement('span');
         textSpan.textContent = titleText;
         
@@ -56,7 +62,22 @@ function closeQuickNav() {
 
     quickNav.classList.remove('is-open');
     toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-label', '打开游戏导航');
+    toggle.setAttribute('aria-label', navigationText('navigation.open', '打开游戏导航'));
+}
+
+function updateNavigationLanguage() {
+    const toggle = document.getElementById('quickNavToggle');
+    const title = document.querySelector('.quick-nav-title');
+    const isOpen = document.getElementById('quickNav')?.classList.contains('is-open');
+    const label = navigationText('navigation.label', '游戏导航');
+
+    if (toggle) {
+        toggle.textContent = window.siteI18n?.getLanguage() === 'en' ? 'Menu' : '导航';
+        toggle.title = label;
+        toggle.setAttribute('aria-label', navigationText(isOpen ? 'navigation.close' : 'navigation.open', label));
+    }
+    if (title) title.textContent = label;
+    generateNavigation();
 }
 
 function setupQuickNavToggle() {
@@ -68,7 +89,7 @@ function setupQuickNavToggle() {
         event.stopPropagation();
         const isOpen = quickNav.classList.toggle('is-open');
         toggle.setAttribute('aria-expanded', String(isOpen));
-        toggle.setAttribute('aria-label', isOpen ? '关闭游戏导航' : '打开游戏导航');
+        toggle.setAttribute('aria-label', navigationText(isOpen ? 'navigation.close' : 'navigation.open', '游戏导航'));
     });
 
     document.addEventListener('click', function(event) {
@@ -103,6 +124,8 @@ window.addEventListener('scroll', function() {
 
 // 页面加载时生成导航
 document.addEventListener('DOMContentLoaded', function() {
-    generateNavigation();
+    updateNavigationLanguage();
     setupQuickNavToggle();
 });
+
+window.addEventListener('siteLanguageChanged', updateNavigationLanguage);

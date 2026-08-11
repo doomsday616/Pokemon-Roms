@@ -23,6 +23,10 @@
     let allSections = [];
     let sectionContents = new Map();  // 存储每个 section 的内容区域
 
+    function paginationText(key, fallback) {
+        return window.siteI18n?.t(key) || fallback;
+    }
+
     /**
      * 初始化分页系统
      */
@@ -313,13 +317,13 @@
         navBar.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 25%, #1a1a1a 50%, #2d2d2d 75%, #1a1a1a 100%); border: 2px solid #d4af37; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);">
                 <button id="prevSection" class="btn btn-sm" style="min-width: 120px; background: linear-gradient(135deg, #d4af37, #f4e5a1, #d4af37); color: #000; border: 2px solid #d4af37; font-weight: bold; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">
-                    ← 上一个系列
+                    ${paginationText('pagination.previous', '← 上一个系列')}
                 </button>
                 <span id="currentSectionName" style="font-weight: bold; background: linear-gradient(135deg, #d4af37, #f4e5a1, #d4af37); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 18px; text-shadow: 0 2px 4px rgba(212, 175, 55, 0.5); filter: drop-shadow(0 2px 4px rgba(212, 175, 55, 0.5));">
-                    加载中...
+                    ${paginationText('pagination.loading', '加载中...')}
                 </span>
                 <button id="nextSection" class="btn btn-sm" style="min-width: 120px; background: linear-gradient(135deg, #d4af37, #f4e5a1, #d4af37); color: #000; border: 2px solid #d4af37; font-weight: bold; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">
-                    下一个系列 →
+                    ${paginationText('pagination.next', '下一个系列 →')}
                 </button>
             </div>
         `;
@@ -373,6 +377,14 @@
         }
     }
 
+    function updatePaginationLanguage() {
+        const prevBtn = document.getElementById('prevSection');
+        const nextBtn = document.getElementById('nextSection');
+        if (prevBtn) prevBtn.textContent = paginationText('pagination.previous', '← 上一个系列');
+        if (nextBtn) nextBtn.textContent = paginationText('pagination.next', '下一个系列 →');
+        updateNavigationButtons();
+    }
+
     /**
      * 公开 API
      */
@@ -382,6 +394,8 @@
         getAllSections: () => [...allSections],
         getSectionData: (sectionId) => sectionContents.get(sectionId)
     };
+
+    window.addEventListener('siteLanguageChanged', updatePaginationLanguage);
 
     // DOM 加载完成后初始化
     if (document.readyState === 'loading') {
