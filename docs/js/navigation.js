@@ -48,8 +48,13 @@ function generateNavigation() {
         
         link.onclick = function(e) {
             e.preventDefault();
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (window.PaginationSystem?.showSection) {
+                window.PaginationSystem.showSection(section.id, true);
+            } else {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
             closeQuickNav();
+            return false;
         };
         navLinks.appendChild(link);
     });

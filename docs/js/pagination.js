@@ -49,10 +49,7 @@
         hideAllSections();
         showSection(initialSection);
 
-        // 4. 修改导航链接行为
-        enhanceNavigation();
-
-        // 5. 添加键盘快捷键（可选）
+        // 4. 添加键盘快捷键（可选）
         addKeyboardShortcuts();
 
         console.log(`[分页系统] 初始化完成，共 ${allSections.length} 个系列`);
@@ -244,29 +241,6 @@
                 window.lazyLoadObserver.observe(img);
             });
         }
-    }
-
-    /**
-     * 增强导航链接
-     */
-    function enhanceNavigation() {
-        // 等待导航生成完成
-        setTimeout(() => {
-            const navLinks = document.querySelectorAll('.nav-link-item');
-            
-            navLinks.forEach(link => {
-                const sectionId = link.getAttribute('href').slice(1);
-                
-                // 移除原有的点击事件
-                link.onclick = function(e) {
-                    e.preventDefault();
-                    showSection(sectionId, true);
-                    return false;
-                };
-            });
-
-            console.log(`[分页系统] 已增强 ${navLinks.length} 个导航链接`);
-        }, 500);  // 等待 navigation.js 执行完成
     }
 
     /**
