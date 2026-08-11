@@ -45,6 +45,10 @@ function generateNavigation() {
         
         link.appendChild(textSpan);
         link.appendChild(countBadge);
+
+        if (window.PaginationSystem?.getCurrentSection?.() === section.id) {
+            link.classList.add('active');
+        }
         
         link.onclick = function(e) {
             e.preventDefault();
